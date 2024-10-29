@@ -1,4 +1,4 @@
-package main
+package decoder
 
 import (
 	"encoding/json"
@@ -80,8 +80,8 @@ func (BencodeDecoder) decodeString(bencodedString []rune) (string, []rune, error
 		return "", nil, err
 	}
 
-	res := string(bencodedString[firstColonIndex+1 : firstColonIndex+1+length])
-	return res, bencodedString[firstColonIndex+length+1:], nil
+	res := string(bencodedString[firstColonIndex+1 : min(len(bencodedString), firstColonIndex+1+length)])
+	return res, bencodedString[min(len(bencodedString), firstColonIndex+1+length):], nil
 }
 
 // Example:
@@ -134,6 +134,7 @@ func (d BencodeDecoder) decodeDict(list []rune) (interface{}, []rune, error) {
 			break
 		}
 
+		println(string(list))
 		if isKey {
 			decoded, l, err := d.decodeString(list)
 			list = l
