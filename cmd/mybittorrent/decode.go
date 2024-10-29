@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"strings"
 	"unicode"
@@ -27,6 +29,8 @@ func (d BencodeDecoder) DecodeBencode(bencodedString []rune) (decoded interface{
 		decoded, remains, err = d.decodeInteger(runes)
 	case runes[0] == 'l':
 		decoded, remains, err = d.decodeList(runes)
+	case runes[0] == 'd':
+		decoded, remains, err = d.decodeDict(runes)
 	default:
 		panic("Invalid BencodeString")
 	}
@@ -84,6 +88,8 @@ func (BencodeDecoder) decodeString(bencodedString []rune) (interface{}, []rune, 
 
 // Example:
 // - l5:helloi52ee -> ["hello", 52]
+// - l5:helloi52ee -> []
+// - lli4eei5ee -> [[4],5]
 func (d BencodeDecoder) decodeList(bencodedList []rune) (interface{}, []rune, error) {
 	var list []interface{} = make([]interface{}, 0)
 
@@ -105,4 +111,66 @@ func (d BencodeDecoder) decodeList(bencodedList []rune) (interface{}, []rune, er
 	}
 
 	return list, nil, nil
+}
+
+// Example:
+// - d3:foo3:bar5:helloi52ee -> {"foo":"bar","hello":52}
+func (d BencodeDecoder) decodeDict(list []rune) (interface{}, []rune, error) {
+	list = list[1:]
+
+	var dict = make(map[interface{}]interface{})
+
+	var key, val interface{}
+	var isKey = true
+
+	for i := 0; i != len(list); {
+		r := list[i]
+		list = list[1:]
+
+		if key == nil && val == nil && r == 'e' {
+			break
+		}
+
+		if isKey {
+			decoded, l, err := d.DecodeBencode(list)
+			list = l
+
+			if err != nil {
+				return nil, nil, err
+			}
+			key = decoded
+			isKey = false
+		} else {
+			decoded, l, err := d.DecodeBencode(list)
+			list = l
+
+			if err != nil {
+				return nil, nil, err
+			}
+
+			val = decoded
+
+			dict[key] = val
+
+			isKey = true
+			key = nil
+			val = nil
+		}
+	}
+
+	if len(dict) == 0 {
+		return "{}", list, nil
+	}
+
+	var buf bytes.Buffer
+	buf.WriteRune('{')
+	for key, val := range dict {
+		buf.WriteString(fmt.Sprintf("%v:%v", key, val))
+		buf.WriteRune(',')
+	}
+
+	res := buf.String()
+	res = res[:len(res)-1] + "}"
+
+	return res, list, nil
 }
