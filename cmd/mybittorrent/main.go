@@ -19,8 +19,21 @@ func main() {
 			fmt.Println(err)
 			return
 		}
-		jsonOutput, _ := json.Marshal(decoded)
-		fmt.Println(string(jsonOutput))
+
+		switch decoded.(type) {
+		case string:
+			if len(decoded.(string)) == 0 {
+				fmt.Println()
+			} else if decoded.(string)[0] == '{' {
+				fmt.Println(decoded.(string))
+			} else {
+				fmt.Println("\"" + decoded.(string) + "\"")
+			}
+		default:
+			jsonOutput, _ := json.Marshal(decoded)
+			fmt.Println(string(jsonOutput))
+		}
+
 	} else {
 		fmt.Println("Unknown command: " + command)
 		os.Exit(1)
