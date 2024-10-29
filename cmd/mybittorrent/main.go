@@ -10,9 +10,6 @@ import (
 func main() {
 	decoder := NewBencodeDecoder()
 
-	// You can use print statements as follows for debugging, they'll be visible when running tests.
-	fmt.Fprintln(os.Stderr, "Logs from your program will appear here!")
-
 	command := os.Args[1]
 
 	if command == "decode" {
