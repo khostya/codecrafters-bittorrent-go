@@ -29,7 +29,7 @@ func main() {
 func decode() {
 	decoder := decoder.NewBencodeDecoder()
 	bencodedValue := os.Args[2]
-	decoded, _, err := decoder.DecodeBencode([]rune(bencodedValue))
+	decoded, _, err := decoder.DecodeBencode(bencodedValue)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -40,7 +40,10 @@ func decode() {
 func info() error {
 	filePath := os.Args[2]
 
-	metadata, _ := domain.NewTorrent(filePath)
+	metadata, err := domain.NewTorrent(filePath)
+	if err != nil {
+		return err
+	}
 
 	fmt.Println(fmt.Sprintf("Tracker URL: %v", metadata.Announce))
 	fmt.Println(fmt.Sprintf("Length: %v", metadata.Info.Length))
@@ -49,8 +52,15 @@ func info() error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(fmt.Sprintf("Info Hash: %x\n", infoHash))
 
+	fmt.Println(fmt.Sprintf("Info Hash: %x", infoHash))
+	fmt.Println(fmt.Sprintf("Piece Length: %v", metadata.Info.PieceLength))
+	fmt.Println("Piece Hashes:")
+
+	println(len(metadata.Info.Pieces))
+	for i := 0; i < len(metadata.Info.Pieces); i += 20 {
+		fmt.Printf("%x\n", metadata.Info.Pieces[i:i+20])
+	}
 	return nil
 }
 

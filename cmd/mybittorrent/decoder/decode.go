@@ -7,7 +7,6 @@ import (
 	"unicode"
 )
 
-// Ensures gofmt doesn't remove the "os" encoding/json import (feel free to remove this!)
 var _ = json.Marshal
 
 type BencodeDecoder struct {
@@ -17,11 +16,11 @@ func NewBencodeDecoder() *BencodeDecoder {
 	return &BencodeDecoder{}
 }
 
-func (d BencodeDecoder) DecodeBencode(bencodedString []rune) (decoded interface{}, remains []rune, err error) {
+func (d BencodeDecoder) DecodeBencode(bencodedString string) (decoded interface{}, remains string, err error) {
 	runes := bencodedString
 
 	switch {
-	case unicode.IsDigit(runes[0]):
+	case unicode.IsDigit(rune(runes[0])):
 		decoded, remains, err = d.decodeString(bencodedString)
 	case runes[0] == 'i':
 		decoded, remains, err = d.decodeInteger(runes)
@@ -39,7 +38,7 @@ func (d BencodeDecoder) DecodeBencode(bencodedString []rune) (decoded interface{
 // - i5e -> 5
 // - i10e -> 10
 // - i-10e -> -10
-func (BencodeDecoder) decodeInteger(runes []rune) (int, []rune, error) {
+func (BencodeDecoder) decodeInteger(runes string) (interface{}, string, error) {
 	runes = runes[1:]
 
 	var (
@@ -63,7 +62,7 @@ func (BencodeDecoder) decodeInteger(runes []rune) (int, []rune, error) {
 // Example:
 // - 5:hello -> hello
 // - 10:hello12345 -> hello12345
-func (BencodeDecoder) decodeString(bencodedString []rune) (string, []rune, error) {
+func (BencodeDecoder) decodeString(bencodedString string) (string, string, error) {
 	var firstColonIndex int
 
 	for i := 0; i < len(bencodedString); i++ {
@@ -77,7 +76,7 @@ func (BencodeDecoder) decodeString(bencodedString []rune) (string, []rune, error
 
 	length, err := strconv.Atoi(string(lengthStr))
 	if err != nil {
-		return "", nil, err
+		return "", "", err
 	}
 
 	res := string(bencodedString[firstColonIndex+1 : min(len(bencodedString), firstColonIndex+1+length)])
@@ -88,7 +87,7 @@ func (BencodeDecoder) decodeString(bencodedString []rune) (string, []rune, error
 // - l5:helloi52ee -> ["hello", 52]
 // - l5:helloi52ee -> []
 // - lli4eei5ee -> [[4],5]
-func (d BencodeDecoder) decodeList(bencodedList []rune) (interface{}, []rune, error) {
+func (d BencodeDecoder) decodeList(bencodedList string) (interface{}, string, error) {
 	var list []interface{} = make([]interface{}, 0)
 
 	bencodedList = bencodedList[1:]
@@ -100,7 +99,7 @@ func (d BencodeDecoder) decodeList(bencodedList []rune) (interface{}, []rune, er
 
 		res, remains, err := d.DecodeBencode(bencodedList)
 		if err != nil {
-			return nil, nil, err
+			return nil, "", err
 		}
 
 		list = append(list, res)
@@ -108,13 +107,13 @@ func (d BencodeDecoder) decodeList(bencodedList []rune) (interface{}, []rune, er
 		bencodedList = remains
 	}
 
-	return list, nil, nil
+	return list, "", nil
 }
 
 // Example:
 // - d3:foo3:bar5:helloi52ee -> {"foo":"bar","hello":52}
 // - d10:inner_dictd4:key16:value14:key2i42e8:list_keyl5:item15:item2i3eeee -> {"inner_dict":{"key1":"value1","key2":42,"list_key":["item1","item2",3]}}
-func (d BencodeDecoder) decodeDict(list []rune) (interface{}, []rune, error) {
+func (d BencodeDecoder) decodeDict(list string) (interface{}, string, error) {
 	list = list[1:]
 
 	var dict = make(map[string]interface{})
@@ -140,7 +139,7 @@ func (d BencodeDecoder) decodeDict(list []rune) (interface{}, []rune, error) {
 			list = l
 
 			if err != nil {
-				return nil, nil, err
+				return nil, "", err
 			}
 			key = decoded
 			isKey = false
@@ -149,7 +148,7 @@ func (d BencodeDecoder) decodeDict(list []rune) (interface{}, []rune, error) {
 			list = l
 
 			if err != nil {
-				return nil, nil, err
+				return nil, "", err
 			}
 
 			val = decoded
