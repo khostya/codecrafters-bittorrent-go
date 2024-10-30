@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/codecrafters-io/bittorrent-starter-go/cmd/mybittorrent/decoder"
-	"io"
+	"github.com/codecrafters-io/bittorrent-starter-go/cmd/mybittorrent/domain"
 	"os"
 )
 
@@ -38,41 +38,18 @@ func decode() {
 }
 
 func info() error {
-	decoder := decoder.NewBencodeDecoder()
 	filePath := os.Args[2]
 
-	file, err := os.Open(filePath)
+	metadata, _ := domain.NewTorrent(filePath)
+
+	fmt.Println(fmt.Sprintf("Tracker URL: %v", metadata.Announce))
+	fmt.Println(fmt.Sprintf("Length: %v", metadata.Info.Length))
+
+	infoHash, err := metadata.InfoHash()
 	if err != nil {
 		return err
 	}
-	defer file.Close()
-
-	data, err := io.ReadAll(file)
-	println(string(data))
-
-	if err != nil {
-		return err
-	}
-
-	decoded, _, err := decoder.DecodeBencode([]rune(string(data)))
-	println(str(decoded), err)
-
-	if err != nil {
-		return err
-	}
-
-	/*
-		var metadata domain.Metadata
-		s := str(decoded)
-		err = json.NewDecoder(strings.NewReader(s)).Decode(&metadata)
-		if err != nil {
-			return err
-		}
-	*/
-
-	var m = decoded.(map[string]interface{})
-	fmt.Println(fmt.Sprintf("Tracker URL: %v", m["announce"]))
-	fmt.Println(fmt.Sprintf("Length: %v", m["info"].(map[string]interface{})["length"]))
+	fmt.Println(fmt.Sprintf("Info Hash: %x\n", infoHash))
 
 	return nil
 }
